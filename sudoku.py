@@ -87,37 +87,38 @@ class Board:
         return Board(new_matrix)
 
 class Sudoku(Problem):
+    
     def __init__(self, initial: SudokuState):
         """O construtor especifica o estado inicial."""
         self.initial = initial
 
     def actions(self, state: SudokuState):
-        """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento."""
-        actions = []
+        """Retorna uma lista de ações válidas para o estado atual."""
+        board = state.board
+        best_cell = None
+        best_options = []
+
         for i in range(9):
             for j in range(9):
-                if state.board.matrix[i][j] == "x":
-                    has_action = False
-                    # Ações possíveis são os números de 1 a 9
-                    
-                    for number in range(1, 10):
-                        number = str(number)
-                        if (number not in state.board.get_line(i) and
-                                number not in state.board.get_column(j) and
-                                number not in state.board.get_square((i // 3) * 3 + j // 3)):
-                            actions.append((i, j, number))
-                            has_action = True
-                    if not has_action:
-                        return []  # Se não houver ações possíveis para uma celula, mata o estado
-        return actions
+                if board.matrix[i][j] == "x":
+                    possible_values = []
+                    for number in map(str, range(1, 10)):
+                        if (number not in board.get_line(i) and
+                            number not in board.get_column(j) and
+                            number not in board.get_square((i // 3) * 3 + j // 3)):
+                            possible_values.append(number)
+                    if not best_options or len(possible_values) < len(best_options):
+                        best_cell = (i, j)
+                        best_options = possible_values
+
+        # Retorna todas as ações possíveis para a melhor célula encontrada
+        return [(best_cell[0], best_cell[1], number) for number in best_options] if best_cell else []
 
     def result(self, state: SudokuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-
         row, col, number = action
         new_board = state.board.copy()
         new_board.write_number(number, (row, col))
@@ -127,7 +128,7 @@ class Sudoku(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
-        print(state.board)
+        #print(state.board)
         for i in range(9):
             line = set(state.board.get_line(i))
             column = set(state.board.get_column(i))
@@ -150,7 +151,6 @@ def main():
     problem = Sudoku(SudokuState(board))
     print("Sudoku inicial:\n")
     print(board)
-    print("Resolvendo o Sudoku...\n")
     Solution = depth_first_graph_search(problem)
     if Solution is None:
         print("Não foi possível resolver o Sudoku.")
